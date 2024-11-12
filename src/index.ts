@@ -1,7 +1,6 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { Server } from "socket.io";
-import type { Server as HTTPServer } from "node:http";
 
 const app = new Hono()
 
@@ -18,7 +17,7 @@ app.get('/', (c) => {
 
 console.log(`Server is running on http://localhost:${port}`)
 
-const io = new Server(httpServer as HTTPServer, {
+const io = new Server(httpServer, {
   /* options */
 });
 
