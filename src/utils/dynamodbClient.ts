@@ -1,9 +1,9 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 
-console.log('DynamoDBClient initialized');
+console.log("DynamoDBClient initialized");
 
 const dynamoDBClient = new DynamoDBClient({
-  region: 'us-east-2',
+  region: "us-east-2",
 });
 
 export default dynamoDBClient;
