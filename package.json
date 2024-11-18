@@ -6,7 +6,6 @@
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.687.0",
     "@hono/node-server": "^1.13.5",
     "hono": "^4.6.9",
     "socket.io": "^4.8.1"
