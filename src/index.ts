@@ -1,7 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { setupRestAPIs } from "./controllers/index.js";
-import { setupSocketListeners } from "./listeners/index.js";
+import { setupRestAPIs } from "./controller";
+import { setupSocketListeners } from "./listeners";
 
 const app = new Hono();
 
