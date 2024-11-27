@@ -1,24 +1,33 @@
-import { Board } from "./board";
-import { Group } from "./group";
-import { Player } from "./player";
-import { Turn } from "./turn";
+import type { Board } from "./board";
+import type { Group } from "./group";
+import type { Player } from "./player";
+import type { Turn } from "./turn";
 
-export interface Game {
+export type Game = NotStartedGame | StartedGame;
+
+export interface NotStartedGame extends GameConfig {
+  gameStatus: GameStatus.LOBBY | GameStatus.STARTING;
+}
+
+export interface StartedGame extends GameConfig {
+  gameStatus: GameStatus.IN_PROGRESS | GameStatus.FINISHED;
+  result: string[];
+  players: Player[];
+  turns: Turn[];
+  board: Board;
+}
+
+interface GameConfig {
   id: string;
   name: string;
   nPlayers: number;
   gameType: GameType;
   gameMode: GameMode;
   gameSpeed: GameSpeed;
-  gameStatus: GameStatus;
   createdBy: string;
   createdAt: number;
   updatedAt: number;
   groupOrder: Group[];
-  result?: string[];
-  players?: Player[];
-  turns?: Turn[];
-  board?: Board;
 }
 
 export enum GameType {

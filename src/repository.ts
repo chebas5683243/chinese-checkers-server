@@ -1,5 +1,12 @@
 import crypto from "node:crypto";
-import { Game, GameMode, GameSpeed, GameStatus, GameType } from "./models/game";
+import {
+  Game,
+  GameMode,
+  GameSpeed,
+  GameStatus,
+  GameType,
+  StartedGame,
+} from "./models/game";
 import { User } from "./models/user";
 import { PartialWithId } from "./types/utility";
 
@@ -9,7 +16,7 @@ function getUUID() {
   return crypto.randomUUID() as string;
 }
 
-async function createGame(createdBy: string) {
+export async function createGame(createdBy: string) {
   const gameId = getUUID();
 
   games.set(gameId, {
@@ -29,7 +36,7 @@ async function createGame(createdBy: string) {
   return gameId;
 }
 
-async function findGame(gameId: string) {
+export async function findGame(gameId: string) {
   const game = games.get(gameId);
 
   if (!game) {
@@ -39,28 +46,28 @@ async function findGame(gameId: string) {
   return game;
 }
 
-async function deleteGame(gameId: string) {
+export async function deleteGame(gameId: string) {
   games.delete(gameId);
 }
 
-async function updateGame(updatedGame: PartialWithId<Game>) {
+export async function updateGame(updatedGame: PartialWithId<Game>) {
   const game = games.get(updatedGame.id);
 
   if (!game) {
     throw new Error("Game not found");
   }
 
-  const newGame: Game = {
+  const newGame = {
     ...game,
     ...updatedGame,
     updatedAt: Date.now(),
-  };
+  } as Game;
 
   games.set(game.id, newGame);
 }
 
-async function addGamePlayers(gameId: string, players: User[]) {
-  const game = games.get(gameId);
+export async function addGamePlayers(gameId: string, players: User[]) {
+  const game = games.get(gameId) as StartedGame | undefined;
 
   if (!game) {
     throw new Error("Game not found");
@@ -77,10 +84,23 @@ async function addGamePlayers(gameId: string, players: User[]) {
   game.updatedAt = Date.now();
 }
 
-export const repository = {
-  createGame,
-  findGame,
-  deleteGame,
-  updateGame,
-  addGamePlayers,
-};
+export async function addPlayerTurn(gameId: string) {
+  const game = games.get(gameId) as StartedGame | undefined;
+
+  if (!game) {
+    throw new Error("Game not found");
+  }
+
+  game.turns = [
+    ...game.turns,
+    {
+      id: getUUID(),
+      gameId,
+      createdAt: Date.now(),
+      from: { q: 0, r: 0 },
+      moves: [],
+      order: game.turns.length + 1,
+    },
+  ];
+  game.updatedAt = Date.now();
+}

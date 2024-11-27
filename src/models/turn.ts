@@ -1,3 +1,5 @@
+import type { HexCoordinates } from "../helpers/hex";
+
 export interface Turn {
   id: string;
   gameId: string;
@@ -5,9 +7,4 @@ export interface Turn {
   moves: HexCoordinates[];
   order: number;
   createdAt: number;
-}
-
-export interface HexCoordinates {
-  q: number;
-  r: number;
 }

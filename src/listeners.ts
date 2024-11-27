@@ -1,7 +1,8 @@
 import type { ServerType } from "@hono/node-server";
 
 import { Server } from "socket.io";
-import { service } from "./service";
+import { Turn } from "./models/turn";
+import * as service from "./service";
 import { Acknowledgement, ServerWithUser } from "./types/socket";
 
 export function setupSocketListeners(httpServer: ServerType) {
@@ -64,7 +65,15 @@ export function setupSocketListeners(httpServer: ServerType) {
       }
     });
 
-    socket.on("moveMade", () => {});
+    socket.on(
+      "moveMade",
+      (roomId: string, turn: Turn, boardHash: string, ack: Acknowledgement) => {
+        try {
+        } catch (error: any) {
+          ack({ status: "error", error: error.message });
+        }
+      }
+    );
 
     socket.on("disconnect", (reason) => {
       socket.rooms.forEach((room) => {

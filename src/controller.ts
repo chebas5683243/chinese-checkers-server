@@ -1,5 +1,5 @@
 import type { Hono } from "hono";
-import { service } from "./service";
+import * as service from "./service";
 import { getUserIdFromCookie } from "./utils";
 
 export function setupRestAPIs(app: Hono) {
