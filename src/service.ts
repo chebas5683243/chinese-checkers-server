@@ -1,4 +1,5 @@
-import { initializeBoard } from "./helpers/board";
+import { hashBoard, initializeBoard } from "./helpers/board";
+import { validateMoves } from "./helpers/turn";
 import { GameStatus } from "./models/game";
 import { Turn } from "./models/turn";
 import { User } from "./models/user";
@@ -25,13 +26,13 @@ export async function startGame(
     throw new Error("Not the game creator");
   }
 
-  if (game.gameStatus !== GameStatus.STARTING) {
+  if (game.status !== GameStatus.STARTING) {
     throw new Error("Game already started");
   }
 
   await repository.updateGame({
     id: roomId,
-    gameStatus: GameStatus.IN_PROGRESS,
+    status: GameStatus.IN_PROGRESS,
     turns: [],
     board: initializeBoard([1, 4]),
     groupOrder: [1, 4],
@@ -47,17 +48,17 @@ export async function initializeGame(gameId: string, userId: string) {
     throw new Error("Not the game creator");
   }
 
-  if (game.gameStatus !== GameStatus.LOBBY) {
+  if (game.status !== GameStatus.LOBBY) {
     throw new Error("Game already started");
   }
 
   await repository.updateGame({
     id: gameId,
-    gameStatus: GameStatus.STARTING,
+    status: GameStatus.STARTING,
   });
 }
 
-export async function saveMove(
+export async function saveMoves(
   gameId: string,
   turn: Turn,
   userId: string,
@@ -65,18 +66,35 @@ export async function saveMove(
 ) {
   const game = await repository.findGame(gameId);
 
-  if (game.gameStatus !== GameStatus.IN_PROGRESS) {
+  if (game.status !== GameStatus.IN_PROGRESS) {
     throw new Error("Game not in progress");
   }
 
-  const currentPlayer =
+  const player = game.players.find((player) => player.userId === userId);
+
+  if (!player) {
+    throw new Error("Player not in the game");
+  }
+
+  const currentGroup =
     game.groupOrder[game.turns.length % game.groupOrder.length];
+
+  if (!player.groups.includes(currentGroup)) {
+    throw new Error("Not player's turn");
+  }
+
+  const newBoard = validateMoves(game.board, turn, currentGroup);
+
+  if (boardHash !== hashBoard(newBoard)) {
+    throw new Error("Invalid board hash");
+  }
 
   const newTurns = game.turns ? [...game.turns, turn] : [turn];
 
   await repository.updateGame({
     id: gameId,
     turns: newTurns,
+    board: newBoard,
   });
 }
 

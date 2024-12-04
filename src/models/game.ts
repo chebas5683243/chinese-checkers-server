@@ -6,11 +6,11 @@ import type { Turn } from "./turn";
 export type Game = NotStartedGame | StartedGame;
 
 export interface NotStartedGame extends GameConfig {
-  gameStatus: GameStatus.LOBBY | GameStatus.STARTING;
+  status: GameStatus.LOBBY | GameStatus.STARTING;
 }
 
 export interface StartedGame extends GameConfig {
-  gameStatus: GameStatus.IN_PROGRESS | GameStatus.FINISHED;
+  status: GameStatus.IN_PROGRESS | GameStatus.FINISHED;
   result: string[];
   players: Player[];
   turns: Turn[];
@@ -21,9 +21,9 @@ interface GameConfig {
   id: string;
   name: string;
   nPlayers: number;
-  gameType: GameType;
-  gameMode: GameMode;
-  gameSpeed: GameSpeed;
+  type: GameType;
+  mode: GameMode;
+  spped: GameSpeed;
   createdBy: string;
   createdAt: number;
   updatedAt: number;

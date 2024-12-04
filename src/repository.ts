@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { Board } from "./models/board";
 import {
   Game,
   GameMode,
@@ -7,6 +8,7 @@ import {
   GameType,
   StartedGame,
 } from "./models/game";
+import { Turn } from "./models/turn";
 import { User } from "./models/user";
 import { PartialWithId } from "./types/utility";
 
@@ -23,10 +25,10 @@ export async function createGame(createdBy: string) {
     id: gameId,
     createdBy,
     createdAt: Date.now(),
-    gameMode: GameMode.CLASSIC,
-    gameSpeed: GameSpeed.NORMAL,
-    gameStatus: GameStatus.LOBBY,
-    gameType: GameType.MULTI_PLAYER,
+    mode: GameMode.CLASSIC,
+    spped: GameSpeed.NORMAL,
+    status: GameStatus.LOBBY,
+    type: GameType.MULTI_PLAYER,
     groupOrder: [],
     name: "New Game",
     nPlayers: 2,
@@ -43,7 +45,7 @@ export async function findGame(gameId: string) {
     throw new Error("Game not found");
   }
 
-  return game;
+  return structuredClone(game);
 }
 
 export async function deleteGame(gameId: string) {
@@ -84,8 +86,8 @@ export async function addGamePlayers(gameId: string, players: User[]) {
   game.updatedAt = Date.now();
 }
 
-export async function addPlayerTurn(gameId: string) {
-  const game = games.get(gameId) as StartedGame | undefined;
+export async function addPlayerTurn(turn: Turn) {
+  const game = games.get(turn.gameId) as StartedGame | undefined;
 
   if (!game) {
     throw new Error("Game not found");
@@ -95,12 +97,23 @@ export async function addPlayerTurn(gameId: string) {
     ...game.turns,
     {
       id: getUUID(),
-      gameId,
+      gameId: turn.gameId,
       createdAt: Date.now(),
       from: { q: 0, r: 0 },
       moves: [],
       order: game.turns.length + 1,
     },
   ];
+  game.updatedAt = Date.now();
+}
+
+export async function updateGameBoard(gameId: string, board: Board) {
+  const game = games.get(gameId) as StartedGame | undefined;
+
+  if (!game) {
+    throw new Error("Game not found");
+  }
+
+  game.board = board;
   game.updatedAt = Date.now();
 }

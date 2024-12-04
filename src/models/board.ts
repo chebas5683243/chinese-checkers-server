@@ -1,6 +1,6 @@
 import type { Group } from "./group";
 
-interface Slot {
+export interface Slot {
   id: string;
   isEmpty: boolean;
   group?: Group;

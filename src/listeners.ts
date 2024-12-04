@@ -34,10 +34,11 @@ export function setupSocketListeners(httpServer: ServerType) {
     socket.on("joinGame", async (roomId: string, ack: Acknowledgement) => {
       try {
         const game = await service.findGame(roomId);
+        const userId = socket.data.userId;
 
         socket.join(roomId);
 
-        socket.to(roomId).emit("playerJoined", { userId: socket.data.userId });
+        socket.to(roomId).emit("playerJoined", { userId });
 
         ack({ status: "success", data: game });
       } catch (error: any) {
@@ -50,14 +51,15 @@ export function setupSocketListeners(httpServer: ServerType) {
         const connectedPlayers = (await io.in(roomId).fetchSockets()).map(
           (socket) => socket.data
         );
+        const userId = socket.data.userId;
 
-        await service.initializeGame(roomId, socket.data.userId);
+        await service.initializeGame(roomId, userId);
 
         ack({ status: "success" });
 
         io.to(roomId).emit("gameStarting");
 
-        await service.startGame(roomId, connectedPlayers, socket.data.userId);
+        await service.startGame(roomId, connectedPlayers, userId);
 
         io.to(roomId).emit("gameStarted");
       } catch (error: any) {
@@ -67,8 +69,19 @@ export function setupSocketListeners(httpServer: ServerType) {
 
     socket.on(
       "moveMade",
-      (roomId: string, turn: Turn, boardHash: string, ack: Acknowledgement) => {
+      async (
+        roomId: string,
+        turn: Turn,
+        boardHash: string,
+        ack: Acknowledgement
+      ) => {
         try {
+          const userId = socket.data.userId;
+
+          await service.saveMoves(roomId, turn, userId, boardHash);
+
+          socket.to(roomId).emit("opponentMove", { turn, boardHash });
+          ack({ status: "success" });
         } catch (error: any) {
           ack({ status: "error", error: error.message });
         }

@@ -1,16 +1,10 @@
+import crypto from "node:crypto";
 import { GROUP_COORDINATES, SLOTS_PER_ROW } from "../constants/board";
 import { Group } from "../models/group";
 import { createHex } from "./hex";
 
+import { Board, Slot } from "../models/board";
 import type { HexCoordinates } from "./hex";
-
-interface Slot {
-  id: string;
-  isEmpty: boolean;
-  group?: Group;
-}
-
-type Board = (Slot | null)[][];
 
 function createEmptySlot(hexCoords: HexCoordinates): Slot {
   return {
@@ -53,7 +47,7 @@ function initializeGroups(board: Board, groups: Group[]) {
   return filledBoard;
 }
 
-function initializeBoard(groups: number[]) {
+export function initializeBoard(groups: number[]) {
   const board = initializeSlots();
 
   const filledBoard = initializeGroups(board, groups);
@@ -61,4 +55,15 @@ function initializeBoard(groups: number[]) {
   return filledBoard;
 }
 
-export { createEmptySlot, initializeBoard, type Board, type Slot };
+export function hashBoard(board: Board) {
+  const flattened = board
+    .flat()
+    .map((obj) => (obj ? JSON.stringify(obj) : "undefined"));
+
+  const combinedString = flattened.join("|");
+
+  const hash = crypto.createHash("sha256");
+  hash.update(combinedString);
+
+  return hash.digest("hex");
+}
