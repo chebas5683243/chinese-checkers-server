@@ -10,6 +10,7 @@ export function setupSocketListeners(httpServer: ServerType) {
   const io: ServerWithUser = new Server(httpServer, {
     cors: {
       origin: "http://localhost:3000",
+      credentials: true,
     },
     cookie: true,
   });
