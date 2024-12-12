@@ -1,12 +1,32 @@
 import type { DefaultEventsMap, Server } from "socket.io";
-import { User } from "../models/user";
+import type { User } from "../models/user";
+import type { Turn } from "../models/turn";
 
-export type ServerWithUser = Server<
-  DefaultEventsMap,
-  DefaultEventsMap,
+export type SocketServer = Server<
+  ClientToServerEvents,
+  ServerToClientEvents,
   DefaultEventsMap,
   User
 >;
+
+interface ClientToServerEvents {
+  joinGame: (roomId: string, ack: Acknowledgement) => Promise<void>;
+  startGame: (roomId: string, ack: Acknowledgement) => Promise<void>;
+  sendMove: (
+    roomId: string,
+    turn: Turn,
+    boardHash: string,
+    ack: Acknowledgement
+  ) => Promise<void>;
+}
+
+interface ServerToClientEvents {
+  playerJoined: (payload: { userId: string }) => void;
+  gameStarting: () => void;
+  gameStarted: () => void;
+  opponentMove: (payload: { turn: Turn; boardHash: string }) => void;
+  playerLeft: (payload: { userId: string }) => void;
+}
 
 interface AcknowledgementSuccessPayload<Data = any> {
   status: "success";

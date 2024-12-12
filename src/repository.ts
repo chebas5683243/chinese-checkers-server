@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import { Board } from "./models/board";
 import {
   Game,
@@ -11,12 +10,9 @@ import {
 import { Turn } from "./models/turn";
 import { User } from "./models/user";
 import { PartialWithId } from "./types/utility";
+import { getUUID } from "./utils/random";
 
 const games = new Map<string, Game>();
-
-function getUUID() {
-  return crypto.randomUUID() as string;
-}
 
 export async function createGame(createdBy: string) {
   const gameId = getUUID();

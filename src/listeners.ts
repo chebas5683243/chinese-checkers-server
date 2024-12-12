@@ -1,13 +1,15 @@
 import type { ServerType } from "@hono/node-server";
+import type { Turn } from "./models/turn";
+import type { Acknowledgement, SocketServer } from "./types/socket";
 
-import { Server } from "socket.io";
-import { Turn } from "./models/turn";
-import * as service from "./service";
-import { Acknowledgement, ServerWithUser } from "./types/socket";
 import * as cookie from "cookie";
+import { Server } from "socket.io";
+import { USER_ID_COOKIE } from "./constants/socket";
+import * as service from "./service";
+import { getUUID } from "./utils/random";
 
 export function setupSocketListeners(httpServer: ServerType) {
-  const io: ServerWithUser = new Server(httpServer, {
+  const io: SocketServer = new Server(httpServer, {
     cors: {
       origin: "http://localhost:3000",
       credentials: true,
@@ -15,37 +17,26 @@ export function setupSocketListeners(httpServer: ServerType) {
     cookie: true,
   });
 
-  io.engine.on("initial_headers", (headers) => {
-    const mycookie = cookie.serialize("mycookie", "1234", {
-      sameSite: true,
-    });
-    console.log("mycookie", mycookie);
-    headers["set-cookie"] = mycookie;
+  io.engine.on("initial_headers", (headers, req) => {
+    const existingCookies = cookie.parse(req.headers.cookie || "");
+    const userId = existingCookies[USER_ID_COOKIE];
+
+    console.log(req.headers.cookie);
+
+    if (!userId) {
+      const userIdCookie = cookie.serialize(USER_ID_COOKIE, getUUID(), {
+        sameSite: "strict",
+        httpOnly: true,
+        path: "/",
+      });
+      headers["set-cookie"] = userIdCookie;
+    }
   });
 
-  // io.use((socket, next) => {
-  //   console.log("weeee");
-  //   const userId = socket.handshake.headers.cookie;
-  //   console.log("userId", userId);
+  io.on("connection", async (socket) => {
+    const cookies = cookie.parse(socket.handshake.headers.cookie || "");
+    console.log("userId", cookies);
 
-  //   if (!userId) {
-  //     return next(new Error("Unauthorized"));
-  //   }
-
-  //   socket.data.userId = userId;
-  //   next();
-  // });
-
-  // io.use((socket, next) => {
-  //   console.log("nConnections", io.sockets.sockets.size);
-  //   console.log("connected", socket.id);
-  //   console.log("userId", socket.data.userId);
-  //   next();
-  // });
-
-  io.on("connection", (socket) => {
-    const userId = cookie.parse(socket.handshake.headers.cookie || "");
-    console.log("userId2", userId);
     socket.on("joinGame", async (roomId: string, ack: Acknowledgement) => {
       try {
         const game = await service.findGame(roomId);
@@ -83,7 +74,7 @@ export function setupSocketListeners(httpServer: ServerType) {
     });
 
     socket.on(
-      "moveMade",
+      "sendMove",
       async (
         roomId: string,
         turn: Turn,
