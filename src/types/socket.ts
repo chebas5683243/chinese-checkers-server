@@ -11,6 +11,7 @@ export type SocketServer = Server<
 
 interface ClientToServerEvents {
   joinGame: (roomId: string, ack: Acknowledgement) => Promise<void>;
+  leaveGame: (roomId: string) => Promise<void>;
   startGame: (roomId: string, ack: Acknowledgement) => Promise<void>;
   sendMove: (
     roomId: string,

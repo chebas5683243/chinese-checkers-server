@@ -4,8 +4,9 @@ import type { Acknowledgement, SocketServer } from "./types/socket";
 
 import * as cookie from "cookie";
 import { Server } from "socket.io";
-import { USER_ID_COOKIE } from "./constants/socket";
+import { USER_ID_COOKIE } from "./constants/cookie";
 import * as service from "./service";
+import { logger } from "./utils/logger";
 import { getUUID } from "./utils/random";
 
 export function setupSocketListeners(httpServer: ServerType) {
@@ -15,45 +16,78 @@ export function setupSocketListeners(httpServer: ServerType) {
       credentials: true,
     },
     cookie: true,
+    pingTimeout: 2000,
   });
 
   io.engine.on("initial_headers", (headers, req) => {
     const existingCookies = cookie.parse(req.headers.cookie || "");
-    const userId = existingCookies[USER_ID_COOKIE];
-
-    console.log(req.headers.cookie);
+    let userId = existingCookies[USER_ID_COOKIE];
 
     if (!userId) {
-      const userIdCookie = cookie.serialize(USER_ID_COOKIE, getUUID(), {
+      userId = getUUID();
+      const userIdCookie = cookie.serialize(USER_ID_COOKIE, userId, {
         sameSite: "strict",
         httpOnly: true,
         path: "/",
       });
       headers["set-cookie"] = userIdCookie;
     }
+
+    req.headers.userId = userId;
+  });
+
+  io.use((socket, next) => {
+    const userId = socket.handshake.headers.userId as string;
+
+    if (!userId) {
+      const errorMsg = "Failed to connect user";
+      logger.error(socket.id, errorMsg);
+      return next(new Error(errorMsg));
+    }
+
+    socket.data.userId = userId;
+    logger.info(socket.id, `User connected: ${userId}`);
+    next();
   });
 
   io.on("connection", async (socket) => {
-    const cookies = cookie.parse(socket.handshake.headers.cookie || "");
-    console.log("userId", cookies);
-
     socket.on("joinGame", async (roomId: string, ack: Acknowledgement) => {
       try {
-        const game = await service.findGame(roomId);
+        logger.info(socket.id, `Joining game: ${roomId}`);
+
+        await service.findGame(roomId);
         const userId = socket.data.userId;
 
         socket.join(roomId);
 
         socket.to(roomId).emit("playerJoined", { userId });
 
-        ack({ status: "success", data: game });
+        ack({ status: "success", data: Date.now() });
       } catch (error: any) {
+        logger.error(socket.id, error.message);
         ack({ status: "error", error: error.message });
+      }
+    });
+
+    socket.on("leaveGame", async (roomId: string) => {
+      try {
+        logger.info(socket.id, `Leaving game: ${roomId}`);
+
+        await service.findGame(roomId);
+        const userId = socket.data.userId;
+
+        socket.leave(roomId);
+
+        socket.to(roomId).emit("playerLeft", { userId });
+      } catch (error: any) {
+        logger.error(socket.id, error.message);
       }
     });
 
     socket.on("startGame", async (roomId: string, ack: Acknowledgement) => {
       try {
+        logger.info(socket.id, `Starting game: ${roomId}`);
+
         const connectedPlayers = (await io.in(roomId).fetchSockets()).map(
           (socket) => socket.data
         );
@@ -69,6 +103,7 @@ export function setupSocketListeners(httpServer: ServerType) {
 
         io.to(roomId).emit("gameStarted");
       } catch (error: any) {
+        logger.error(socket.id, error.message);
         ack({ status: "error", error: error.message });
       }
     });
@@ -82,6 +117,11 @@ export function setupSocketListeners(httpServer: ServerType) {
         ack: Acknowledgement
       ) => {
         try {
+          logger.info(
+            socket.id,
+            `Sending move: ${JSON.stringify(turn)} to room ${roomId}`
+          );
+
           const userId = socket.data.userId;
 
           await service.saveMoves(roomId, turn, userId, boardHash);
@@ -89,16 +129,24 @@ export function setupSocketListeners(httpServer: ServerType) {
           socket.to(roomId).emit("opponentMove", { turn, boardHash });
           ack({ status: "success" });
         } catch (error: any) {
+          logger.error(socket.id, error.message);
           ack({ status: "error", error: error.message });
         }
       }
     );
 
-    socket.on("disconnect", (reason) => {
-      socket.rooms.forEach((room) => {
-        socket.to(room).emit("playerLeft", { userId: socket.data.userId });
-      });
-      console.log("disconnected", socket.id, reason);
+    socket.on("disconnecting", (reason) => {
+      try {
+        socket.rooms.forEach((room) => {
+          io.to(room).emit("playerLeft", { userId: socket.data.userId });
+        });
+        logger.info(
+          socket.id,
+          `User disconnected: ${socket.data.userId}, Reason: ${reason}`
+        );
+      } catch (error: any) {
+        logger.error(socket.id, error.message);
+      }
     });
   });
 }

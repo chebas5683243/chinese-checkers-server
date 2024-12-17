@@ -1,8 +1,8 @@
 import type { Hono } from "hono";
+import { getCookie } from "hono/cookie";
+import { cors } from "hono/cors";
 import * as service from "./service";
 import { getUserIdFromCookie } from "./utils";
-import { getCookie, setCookie } from "hono/cookie";
-import { cors } from "hono/cors";
 
 export function setupRestAPIs(app: Hono) {
   app.use("*", async (c, next) => {
@@ -11,21 +11,21 @@ export function setupRestAPIs(app: Hono) {
       credentials: true,
     });
 
-    console.log("cookies", getCookie(c));
-
     return corsMiddlewareHandler(c, next);
   });
 
   app.get("/", (c) => {
-    setCookie(c, "delicious_cookie", "macha");
+    const userId = getUserIdFromCookie(c);
+
+    if (!userId) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
     return c.text("Server is running");
   });
 
   app.post("/game", async (c) => {
-    console.log(getCookie(c));
     const userId = getUserIdFromCookie(c);
-
-    console.log(c);
 
     if (!userId) {
       return c.json({ error: "Unauthorized" }, 401);
