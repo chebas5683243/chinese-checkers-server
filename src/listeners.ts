@@ -51,25 +51,32 @@ export function setupSocketListeners(httpServer: ServerType) {
   });
 
   io.on("connection", async (socket) => {
-    socket.on("joinGame", async (roomId: string, ack: Acknowledgement) => {
+    socket.on("joinGame", async (roomId, ack) => {
       try {
         logger.info(socket.id, `Joining game: ${roomId}`);
 
-        await service.findGame(roomId);
+        const game = await service.findGame(roomId);
         const userId = socket.data.userId;
 
         socket.join(roomId);
 
-        socket.to(roomId).emit("playerJoined", { userId });
+        socket.to(roomId).emit("playerJoined", { socketId: socket.id, userId });
 
-        ack({ status: "success", data: Date.now() });
+        const gameConnections = (await io.in(roomId).fetchSockets()).map(
+          (socket) => ({ socketId: socket.id, userId: socket.data.userId })
+        );
+
+        ack({
+          status: "success",
+          data: { connections: gameConnections, game },
+        });
       } catch (error: any) {
         logger.error(socket.id, error.message);
         ack({ status: "error", error: error.message });
       }
     });
 
-    socket.on("leaveGame", async (roomId: string) => {
+    socket.on("leaveGame", async (roomId) => {
       try {
         logger.info(socket.id, `Leaving game: ${roomId}`);
 
@@ -78,13 +85,13 @@ export function setupSocketListeners(httpServer: ServerType) {
 
         socket.leave(roomId);
 
-        socket.to(roomId).emit("playerLeft", { userId });
+        socket.to(roomId).emit("playerLeft", { socketId: socket.id, userId });
       } catch (error: any) {
         logger.error(socket.id, error.message);
       }
     });
 
-    socket.on("startGame", async (roomId: string, ack: Acknowledgement) => {
+    socket.on("startGame", async (roomId, ack) => {
       try {
         logger.info(socket.id, `Starting game: ${roomId}`);
 
@@ -99,47 +106,42 @@ export function setupSocketListeners(httpServer: ServerType) {
 
         io.to(roomId).emit("gameStarting");
 
-        await service.startGame(roomId, connectedPlayers, userId);
+        const game = await service.startGame(roomId, connectedPlayers, userId);
 
-        io.to(roomId).emit("gameStarted");
+        io.to(roomId).emit("gameStarted", game);
       } catch (error: any) {
         logger.error(socket.id, error.message);
         ack({ status: "error", error: error.message });
       }
     });
 
-    socket.on(
-      "sendMove",
-      async (
-        roomId: string,
-        turn: Turn,
-        boardHash: string,
-        ack: Acknowledgement
-      ) => {
-        try {
-          logger.info(
-            socket.id,
-            `Sending move: ${JSON.stringify(turn)} to room ${roomId}`
-          );
+    socket.on("sendMove", async (roomId, turn, boardHash, ack) => {
+      try {
+        logger.info(
+          socket.id,
+          `Sending move: ${JSON.stringify(turn)} to room ${roomId}`
+        );
 
-          const userId = socket.data.userId;
+        const userId = socket.data.userId;
 
-          await service.saveMoves(roomId, turn, userId, boardHash);
+        await service.saveMoves(roomId, turn, userId, boardHash);
 
-          socket.to(roomId).emit("opponentMove", { turn, boardHash });
-          ack({ status: "success" });
-        } catch (error: any) {
-          logger.error(socket.id, error.message);
-          ack({ status: "error", error: error.message });
-        }
+        socket.to(roomId).emit("opponentMove", turn, boardHash);
+        ack({ status: "success" });
+      } catch (error: any) {
+        logger.error(socket.id, error.message);
+        ack({ status: "error", error: error.message });
       }
-    );
+    });
 
     socket.on("disconnecting", (reason) => {
       try {
+        const userId = socket.data.userId;
+
         socket.rooms.forEach((room) => {
-          io.to(room).emit("playerLeft", { userId: socket.data.userId });
+          io.to(room).emit("playerLeft", { socketId: socket.id, userId });
         });
+
         logger.info(
           socket.id,
           `User disconnected: ${socket.data.userId}, Reason: ${reason}`

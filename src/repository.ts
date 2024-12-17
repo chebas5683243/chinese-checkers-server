@@ -22,7 +22,7 @@ export async function createGame(createdBy: string) {
     createdBy,
     createdAt: Date.now(),
     mode: GameMode.CLASSIC,
-    spped: GameSpeed.NORMAL,
+    speed: GameSpeed.NORMAL,
     status: GameStatus.LOBBY,
     type: GameType.MULTI_PLAYER,
     groupOrder: [],
@@ -62,6 +62,8 @@ export async function updateGame(updatedGame: PartialWithId<Game>) {
   } as Game;
 
   games.set(game.id, newGame);
+
+  return structuredClone(game);
 }
 
 export async function addGamePlayers(gameId: string, players: User[]) {
@@ -80,6 +82,8 @@ export async function addGamePlayers(gameId: string, players: User[]) {
     updatedAt: Date.now(),
   }));
   game.updatedAt = Date.now();
+
+  return structuredClone(game);
 }
 
 export async function addPlayerTurn(turn: Turn) {

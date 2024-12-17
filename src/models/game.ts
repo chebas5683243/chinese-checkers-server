@@ -23,7 +23,7 @@ interface GameConfig {
   nPlayers: number;
   type: GameType;
   mode: GameMode;
-  spped: GameSpeed;
+  speed: GameSpeed;
   createdBy: string;
   createdAt: number;
   updatedAt: number;

@@ -1,6 +1,6 @@
 import { hashBoard, initializeBoard } from "./helpers/board";
 import { validateMoves } from "./helpers/turn";
-import { GameStatus } from "./models/game";
+import { Game, GameStatus } from "./models/game";
 import { Turn } from "./models/turn";
 import { User } from "./models/user";
 import * as repository from "./repository";
@@ -38,7 +38,9 @@ export async function startGame(
     groupOrder: [1, 4],
   });
 
-  await repository.addGamePlayers(roomId, players);
+  const updatedGame = await repository.addGamePlayers(roomId, players);
+
+  return updatedGame;
 }
 
 export async function initializeGame(gameId: string, userId: string) {
