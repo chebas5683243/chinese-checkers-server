@@ -7,7 +7,10 @@ import { getUserIdFromCookie } from "./utils";
 export function setupRestAPIs(app: Hono) {
   app.use("*", async (c, next) => {
     const corsMiddlewareHandler = cors({
-      origin: "http://localhost:3000",
+      origin: [
+        "https://chinese-checkers-ui.vercel.app",
+        "http://localhost:3000",
+      ],
       credentials: true,
     });
 

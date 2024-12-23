@@ -12,7 +12,10 @@ import { getUUID } from "./utils/random";
 export function setupSocketListeners(httpServer: ServerType) {
   const io: SocketServer = new Server(httpServer, {
     cors: {
-      origin: "http://localhost:3000",
+      origin: [
+        "https://chinese-checkers-ui.vercel.app",
+        "http://localhost:3000",
+      ],
       credentials: true,
     },
     cookie: true,
@@ -26,7 +29,8 @@ export function setupSocketListeners(httpServer: ServerType) {
     if (!userId) {
       userId = getUUID();
       const userIdCookie = cookie.serialize(USER_ID_COOKIE, userId, {
-        sameSite: "strict",
+        sameSite: "none",
+        secure: true,
         httpOnly: true,
         path: "/",
       });
