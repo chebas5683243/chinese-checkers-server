@@ -34,4 +34,11 @@ export function setupRestAPIs(app: Hono) {
     const gameId = await service.createGame(userId);
     return c.json({ gameId }, 201);
   });
+
+  app.get("/game/:gameId", async (c) => {
+    const gameId = c.req.param().gameId;
+
+    const game = await service.findGame(gameId);
+    return c.json({ game }, 201);
+  });
 }
