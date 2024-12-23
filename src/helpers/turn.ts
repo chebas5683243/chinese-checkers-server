@@ -2,6 +2,7 @@ import { HEX_DIRECTION_VECTORS } from "../constants/hex-directions";
 import { Board } from "../models/board";
 import { Group } from "../models/group";
 import { Turn } from "../models/turn";
+import { logger } from "../utils/logger";
 import { hexCompare, HexCoordinates, hexDivide, hexSubtract } from "./hex";
 
 export function validateMoves(board: Board, turn: Turn, group: Group): Board {
@@ -91,6 +92,7 @@ function validateHoppingMoves(board: Board, turn: Turn): Board {
     const isHop = checkIfIsHopping(fromHex, toHex);
 
     if (!isHop) {
+      logger.error("test", JSON.stringify({ fromHex, toHex }));
       throw new Error("Move is not a hop");
     }
 
@@ -113,6 +115,7 @@ function validateHoppingMoves(board: Board, turn: Turn): Board {
     currentSlot.isEmpty = true;
 
     currentSlot = toSlot;
+    fromHex = toHex;
   }
 
   return newBoard;
