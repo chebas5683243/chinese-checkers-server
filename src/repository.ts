@@ -73,11 +73,11 @@ export async function addGamePlayers(gameId: string, players: User[]) {
     throw new Error("Game not found");
   }
 
-  game.players = players.map((user) => ({
+  game.players = players.map((user, index) => ({
     id: getUUID(),
     gameId,
     userId: user.userId,
-    groups: [],
+    groups: index === 0 ? [0] : [3],
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }));

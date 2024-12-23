@@ -106,6 +106,9 @@ export function setupSocketListeners(httpServer: ServerType) {
 
         io.to(roomId).emit("gameStarting");
 
+        // TODO: get rid of simulated delay for testing
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
         const game = await service.startGame(roomId, connectedPlayers, userId);
 
         io.to(roomId).emit("gameStarted", game);

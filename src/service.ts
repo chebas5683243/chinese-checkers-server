@@ -34,8 +34,8 @@ export async function startGame(
     id: roomId,
     status: GameStatus.IN_PROGRESS,
     turns: [],
-    board: initializeBoard([1, 4]),
-    groupOrder: [1, 4],
+    board: initializeBoard([0, 3]),
+    groupOrder: [0, 3],
   });
 
   const updatedGame = await repository.addGamePlayers(roomId, players);
@@ -87,9 +87,10 @@ export async function saveMoves(
 
   const newBoard = validateMoves(game.board, turn, currentGroup);
 
-  if (boardHash !== hashBoard(newBoard)) {
-    throw new Error("Invalid board hash");
-  }
+  // TODO: validate Hash
+  // if (boardHash !== hashBoard(newBoard)) {
+  //   throw new Error("Invalid board hash");
+  // }
 
   const newTurns = game.turns ? [...game.turns, turn] : [turn];
 
